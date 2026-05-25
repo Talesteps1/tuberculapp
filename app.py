@@ -66,8 +66,8 @@ if "paciente_logado" not in st.session_state:
 st.sidebar.title("🫁 TuberculApp")
 menu = st.sidebar.radio("Navegação", [
     "Área Médica (Restrita)", 
-    "Portal do Paciente", 
-    "Dashboard e Mapa", 
+    "Dashboard e Mapa (Restrito)",
+    "Portal do Paciente",  
     "Informações do Tratamento"
 ])
 
@@ -390,7 +390,7 @@ elif menu == "Portal do Paciente":
 elif menu == "Dashboard e Mapa":
     if not st.session_state.medico_logado:
         st.title("🔒 Acesso Restrito - Dashboard")
-        senha_dash = st.text_input("Senha de acesso", type="password", key="senha_dash")
+        senha_dash = st.text_input("Senha", type="password", key="senha_dash")
         if st.button("Entrar no Dashboard", key="btn_dash"):
             if senha_dash == "seguro123":
                 st.session_state.medico_logado = True
