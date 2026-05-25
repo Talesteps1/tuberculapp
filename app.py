@@ -387,7 +387,7 @@ elif menu == "Portal do Paciente":
 # ==========================================
 # MENU 3: DASHBOARD E MAPA
 # ==========================================
-elif menu == "Dashboard e Mapa":
+elif menu == "Dashboard e Mapa (Restrito)":
     if not st.session_state.medico_logado:
         st.title("🔒 Acesso Restrito - Dashboard")
         senha_dash = st.text_input("Senha", type="password", key="senha_dash")
