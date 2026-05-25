@@ -391,7 +391,7 @@ elif menu == "Dashboard e Mapa (Restrito)":
     if not st.session_state.medico_logado:
         st.title("🔒 Acesso Restrito - Dashboard")
         senha_dash = st.text_input("Senha", type="password", key="senha_dash")
-        if st.button("Entrar no Dashboard", key="btn_dash"):
+        if st.button("Entrar", key="btn_dash"):
             if senha_dash == "seguro123":
                 st.session_state.medico_logado = True
                 st.rerun()
