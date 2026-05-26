@@ -225,8 +225,7 @@ if menu == "Área Médica (Restrita)":
                 for index, row in df_com_telefone.iterrows():
                     telefone = str(row["Telefone"]).strip()
                     nome_paciente = str(row["Nome/Prontuário"])
-                    texto_bot = f"Olá, {nome_paciente}! Sou o Bot TuberculApp. Lembrete: Hora da sua medicação diária. 
-                    E se lembre de confirmar que tomou sua medicação no TuberculApp!"
+                    texto_bot = f"Olá, {nome_paciente}! Sou o Bot TuberculApp. Lembrete: Hora da sua medicação diária. E se lembre de confirmar que tomou sua medicação no TuberculApp!"
                     
                     col_a, col_b, col_c = st.columns([3, 1, 1])
                     with col_a:
