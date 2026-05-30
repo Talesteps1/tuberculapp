@@ -30,32 +30,32 @@ COORDENADAS_ESTADOS = {
 }
 
 def carregar_dados():
+    # Cria um esqueleto perfeito e seguro com todas as colunas
+    df = pd.DataFrame(columns=COLUNAS) 
+    
     if os.path.exists(ARQUIVO_DADOS):
-        df = pd.read_csv(ARQUIVO_DADOS)
-        for col in COLUNAS:
-            if col not in df.columns:
-                if col in ["TDO Realizados", "Doses Autodeclaradas", "Idade"]:
-                    df[col] = 0
-                else:
-                    df[col] = ""
+        try:
+            df_lido = pd.read_csv(ARQUIVO_DADOS)
+            # Transfere apenas os dados do CSV antigo para o novo esqueleto
+            for col in df_lido.columns:
+                if col in COLUNAS:
+                    df[col] = df_lido[col]
+        except Exception:
+            pass
+            
+    # Formatação de segurança para evitar que campos fiquem nulos
+    cols_texto = ["Nome/Prontuário", "CPF", "Telefone", "Sexo", "Etnia", "Escolaridade", "Data Início", "Estado", "Forma Clínica", "Tipo de Caso", "Baciloscopia", "TRM-TB", "Senha", "Último Check", "Último V-TDO", "Agendamento V-TDO"]
+    for col in cols_texto:
+        df[col] = df[col].fillna("").astype(str).replace("nan", "")
         
-        df["Último Check"] = df["Último Check"].fillna("").astype(str).replace("nan", "")
-        df["Último V-TDO"] = df["Último V-TDO"].fillna("").astype(str).replace("nan", "")
-        df["Agendamento V-TDO"] = df["Agendamento V-TDO"].fillna("").astype(str).replace("nan", "")
-        df["Senha"] = df["Senha"].fillna("").astype(str).replace("nan", "")
-        df["Nome/Prontuário"] = df["Nome/Prontuário"].fillna("").astype(str).replace("nan", "")
-        df["Estado"] = df["Estado"].fillna("").astype(str).replace("nan", "")
-        df["CPF"] = df["CPF"].fillna("").astype(str).replace("nan", "")
-        df["Telefone"] = df["Telefone"].fillna("").astype(str).replace("nan", "")
-        df["Idade"] = df["Idade"].fillna(0)
-        df["Sexo"] = df["Sexo"].fillna("").astype(str).replace("nan", "")
-        df["Etnia"] = df["Etnia"].fillna("").astype(str).replace("nan", "")
-        df["Escolaridade"] = df["Escolaridade"].fillna("").astype(str).replace("nan", "")
-        df["Condições Especiais"] = df["Condições Especiais"].fillna("Nenhuma").astype(str).replace("nan", "Nenhuma")
-        df["Efeitos Adversos"] = df["Efeitos Adversos"].fillna("Nenhum registro")
-        return df
-    else:
-        return pd.DataFrame(columns=COLUNAS)
+    df["Condições Especiais"] = df["Condições Especiais"].fillna("Nenhuma").astype(str).replace("nan", "Nenhuma")
+    df["Efeitos Adversos"] = df["Efeitos Adversos"].fillna("Nenhum registro").astype(str).replace("nan", "Nenhum registro")
+    
+    cols_numericas = ["Idade", "Peso (kg)", "TDO Realizados", "Doses Autodeclaradas"]
+    for col in cols_numericas:
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        
+    return df
 
 def salvar_dados(df):
     df.to_csv(ARQUIVO_DADOS, index=False)
@@ -133,6 +133,8 @@ if menu == "Área Médica (Restrita)":
                 
                 if not nome or not senha_paciente or not cpf_limpo:
                     st.error("Preencha o Nome, CPF e a Senha do Paciente obrigatórios.")
+                elif len(cpf_limpo) < 11:
+                    st.error("Erro: O CPF deve conter no mínimo 11 dígitos!")
                 elif cpf_limpo in cpfs_cadastrados and cpf_limpo != "":
                     st.error(f"Erro de Duplicidade: O CPF {cpf_limpo} já está cadastrado no sistema!")
                 else:
@@ -267,7 +269,7 @@ if menu == "Área Médica (Restrita)":
                 st.info("Nenhum paciente cadastrado no momento.")
 
 # ==========================================
-# MENU 2: PORTAL DO PACIENTE (ATUALIZADO PARA LOGIN POR CPF)
+# MENU 2: PORTAL DO PACIENTE
 # ==========================================
 elif menu == "Portal do Paciente":
     if not st.session_state.paciente_logado:
@@ -279,20 +281,16 @@ elif menu == "Portal do Paciente":
             cpf_formatado = busca_cpf.replace(".", "").replace("-", "").strip()
             senha_formatada = senha_acesso.strip()
             
-            # Limpa a coluna de CPF do banco temporariamente para garantir uma comparação perfeita
             cpfs_banco = df_atual["CPF"].astype(str).str.replace(".", "", regex=False).str.replace("-", "", regex=False).str.strip()
             
-            # Faz a checagem cruzando o CPF digitado com o banco e a senha
             paciente_match = df_atual[(cpfs_banco == cpf_formatado) & (df_atual["Senha"] == senha_formatada)]
             
             if not paciente_match.empty:
-                # O sistema salva o CPF do paciente na sessão para evitar problemas com homônimos
                 st.session_state.paciente_logado = paciente_match.iloc[0]["CPF"]
                 st.rerun()
             else:
                 st.error("CPF ou senha incorretos.")
     else:
-        # Busca os dados do paciente pelo CPF logado
         cpf_paciente_logado = str(st.session_state.paciente_logado).strip()
         idx = df_atual.index[df_atual["CPF"].astype(str).str.strip() == cpf_paciente_logado][0]
         paciente = df_atual.iloc[idx]
@@ -360,7 +358,6 @@ elif menu == "Portal do Paciente":
                         salvar_dados(df_atual)
                         st.rerun()
                     
-        # Módulo de Calendário de Agendamento do Paciente
         st.divider()
         st.subheader("Sua Rotina de V-TDO")
         st.write("Agende os dias e horários da sua rotina de videochamadas com a equipe de saúde (recomendado: mínimo de 3 dias úteis por semana na fase inicial).")
@@ -452,8 +449,8 @@ elif menu == "Dashboard e Mapa (Restrito)":
                 idades = pd.to_numeric(df_atual["Idade"], errors='coerce').dropna()
                 min_i = int(idades.min()) if not idades.empty else 0
                 max_i = int(idades.max()) if not idades.empty else 120
-                if min_i == max_i:
-                    max_i += 1
+                if min_i >= max_i:
+                    max_i = min_i + 1
                 f_idade = st.slider("Faixa Etária", min_i, max_i, (min_i, max_i))
 
             if f_forma:
@@ -465,7 +462,7 @@ elif menu == "Dashboard e Mapa (Restrito)":
             if f_sexo:
                 df_filtrado = df_filtrado[df_filtrado["Sexo"].isin(f_sexo)]
             if f_condicoes:
-                df_filtrado = df_filtrado[df_filtrado["Condições Especiais"].apply(lambda x: any(c in str(x) for c in f_condicoes))]
+                df_filtrado = df_filtrado[df_filtrado["Condições Especiais"].astype(str).apply(lambda x: any(c in x for c in f_condicoes))]
             
             df_filtrado["Idade_Num"] = pd.to_numeric(df_filtrado["Idade"], errors='coerce').fillna(-1)
             df_filtrado = df_filtrado[(df_filtrado["Idade_Num"] >= f_idade[0]) & (df_filtrado["Idade_Num"] <= f_idade[1])]
