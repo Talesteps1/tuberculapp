@@ -10,7 +10,6 @@ st.set_page_config(page_title="TuberculApp", page_icon="🫁", layout="wide")
 
 ARQUIVO_DADOS = "pacientes.csv"
 
-# COLUNAS ATUALIZADAS: Incluindo Sexo e Condições Especiais
 COLUNAS = [
     "Nome/Prontuário", "CPF", "Telefone", "Idade", "Sexo", "Etnia", "Escolaridade", "Data Início", 
     "Estado", "Forma Clínica", "Tipo de Caso", "Baciloscopia", "TRM-TB", 
@@ -268,28 +267,36 @@ if menu == "Área Médica (Restrita)":
                 st.info("Nenhum paciente cadastrado no momento.")
 
 # ==========================================
-# MENU 2: PORTAL DO PACIENTE
+# MENU 2: PORTAL DO PACIENTE (ATUALIZADO PARA LOGIN POR CPF)
 # ==========================================
 elif menu == "Portal do Paciente":
     if not st.session_state.paciente_logado:
         st.title("Acesso do Paciente")
-        busca = st.text_input("Seu Nome ou Prontuário:")
+        busca_cpf = st.text_input("Seu CPF (Apenas números):")
         senha_acesso = st.text_input("Sua Senha:", type="password")
         
         if st.button("Acessar Meu Tratamento"):
-            nome_formatado = busca.strip()
+            cpf_formatado = busca_cpf.replace(".", "").replace("-", "").strip()
             senha_formatada = senha_acesso.strip()
             
-            paciente_match = df_atual[(df_atual["Nome/Prontuário"] == nome_formatado) & (df_atual["Senha"] == senha_formatada)]
+            # Limpa a coluna de CPF do banco temporariamente para garantir uma comparação perfeita
+            cpfs_banco = df_atual["CPF"].astype(str).str.replace(".", "", regex=False).str.replace("-", "", regex=False).str.strip()
+            
+            # Faz a checagem cruzando o CPF digitado com o banco e a senha
+            paciente_match = df_atual[(cpfs_banco == cpf_formatado) & (df_atual["Senha"] == senha_formatada)]
+            
             if not paciente_match.empty:
-                st.session_state.paciente_logado = paciente_match.iloc[0]["Nome/Prontuário"]
+                # O sistema salva o CPF do paciente na sessão para evitar problemas com homônimos
+                st.session_state.paciente_logado = paciente_match.iloc[0]["CPF"]
                 st.rerun()
             else:
-                st.error("Nome/Prontuário ou senha incorretos.")
+                st.error("CPF ou senha incorretos.")
     else:
-        nome_paciente = st.session_state.paciente_logado
-        idx = df_atual.index[df_atual["Nome/Prontuário"] == nome_paciente][0]
+        # Busca os dados do paciente pelo CPF logado
+        cpf_paciente_logado = str(st.session_state.paciente_logado).strip()
+        idx = df_atual.index[df_atual["CPF"].astype(str).str.strip() == cpf_paciente_logado][0]
         paciente = df_atual.iloc[idx]
+        nome_paciente = paciente["Nome/Prontuário"]
         
         col_titulo, col_botao = st.columns([4, 1])
         with col_titulo:
@@ -391,13 +398,13 @@ elif menu == "Portal do Paciente":
             total_p = (0 if pd.isna(tdo_p) else tdo_p) + (0 if pd.isna(auto_p) else auto_p)
             restantes_p = max(0, 180 - total_p)
             
-            df_pizza_pac = pd.DataFrame({"Status": ["Doses Tomadas", "Doses Restantes"], "Quantidade": [total_p, geopolitical_restantes := restantes_p]})
+            df_pizza_pac = pd.DataFrame({"Status": ["Doses Tomadas", "Doses Restantes"], "Quantidade": [total_p, restantes_p]})
             fig2 = px.pie(df_pizza_pac, values='Quantidade', names='Status', hole=0.4, color='Status', color_discrete_map={"Doses Tomadas": "#2e7d32", "Doses Restantes": "#e0e0e0"})
             fig2.update_layout(margin=dict(t=0, b=0, l=0, r=0))
             st.plotly_chart(fig2, use_container_width=True)
 
 # ==========================================
-# MENU 3: DASHBOARD E MAPA (FILTROS EXPANDIDOS)
+# MENU 3: DASHBOARD E MAPA
 # ==========================================
 elif menu == "Dashboard e Mapa (Restrito)":
     if not st.session_state.medico_logado:
@@ -428,7 +435,6 @@ elif menu == "Dashboard e Mapa (Restrito)":
             opcoes_esc = [x for x in df_atual["Escolaridade"].unique() if str(x) != "nan" and str(x) != ""]
             opcoes_sexo = [x for x in df_atual["Sexo"].unique() if str(x) != "nan" and str(x) != ""]
             
-            # Primeira fileira de filtros
             col_f1, col_f2, col_f3 = st.columns(3)
             with col_f1:
                 f_forma = st.multiselect("Forma Clínica", opcoes_forma)
@@ -437,7 +443,6 @@ elif menu == "Dashboard e Mapa (Restrito)":
             with col_f3:
                 f_esc = st.multiselect("Escolaridade", opcoes_esc)
             
-            # Segunda fileira de filtros (Gênero, Comorbidades e Idade)
             col_f4, col_f5, col_f6 = st.columns(3)
             with col_f4:
                 f_sexo = st.multiselect("Sexo / Identidade de Gênero", opcoes_sexo)
@@ -451,7 +456,6 @@ elif menu == "Dashboard e Mapa (Restrito)":
                     max_i += 1
                 f_idade = st.slider("Faixa Etária", min_i, max_i, (min_i, max_i))
 
-            # Aplicação lógica dos filtros estruturados
             if f_forma:
                 df_filtrado = df_filtrado[df_filtrado["Forma Clínica"].isin(f_forma)]
             if f_etnia:
@@ -507,7 +511,7 @@ elif menu == "Informações do Tratamento":
     st.write("A tuberculose é uma doença infecciosa e transmissível, causada pela bactéria Mycobacterium tuberculosis, também conhecida como bacilo de Koch. A doença afeta principalmente os pulmões (forma pulmonar), mas pode atingir outros órgãos e/ou sistemas (forma extrapulmonar). A forma extrapulmonar ocorre com mais frequência em pessoas vivendo com HIV e/ou aids, especialmente aquelas com imunidade baixa.")
     
     st.subheader("Transmissão")
-    st.write("A transmissão da tuberculose acontece por via respiratória, pela eliminação de aerossóis (partículas muito pequenas) produzidos pela tosse, fala ou espirro de uma pessoa com tuberculose activa (pulmonar ou laríngea), sem tratamento. Quando outras pessoas respirarem essa partículas, há a possibilidade de se infectarem. Calcula-se que, durante um ano, em uma comunidade, uma pessoa com tuberculose pulmonar e/ou laríngea ativa, sem tratamento, e que esteja eliminando aerossóis com bacilos, possa infectar, em média, de 10 a 15 pessoas.")
+    st.write("A transmissão da tuberculose acontece por via respiratória, pela eliminação de aerossóis (partículas muito pequenas) produzidos pela tosse, fala ou espirro de uma pessoa com tuberculose ativa (pulmonar ou laríngea), sem tratamento. Quando outras pessoas respirarem essas partículas, há a possibilidade de se infectarem. Calcula-se que, durante um ano, em uma comunidade, uma pessoa com tuberculose pulmonar e/ou laríngea ativa, sem tratamento, e que esteja eliminando aerossóis com bacilos, possa infectar, em média, de 10 a 15 pessoas.")
     
     st.subheader("O que não transmite a tuberculose")
     st.write("A tuberculose não é transmitida por objetos compartilhados. Bacilos que se depositam em roupas, lençóis, copos e talheres dificilmente se espalham em aerossóis e, por isso, não têm papel importante na transmissão da doença.")
@@ -529,7 +533,7 @@ elif menu == "Informações do Tratamento":
         st.write("Sim! O contato físico não transmite a doença. O que se recomenda nos primeiros 15 dias de tratamento (quando você ainda pode transmitir o bacilo pelo ar) é manter os ambientes da casa bem ventilados e com luz solar. Após esse período inicial, o risco de transmissão cai drasticamente.")
 
     with st.expander("Minha urina, suor e lágrimas ficaram com uma cor alaranjada/avermelhada. Isso é perigoso?"):
-        st.write("Não se assuste, isso é completamente normal. Um dos antibióticos do seu esquema (a Rifampicina) tem uma coloração forte que altera a cor dos fluidos corporais. Isso não faz mal aos rims e desaparece quando o tratamento terminar.")
+        st.write("Não se assuste, isso é completamente normal. Um dos antibióticos do seu esquema (a Rifampicina) tem uma coloração forte que altera a cor dos fluidos corporais. Isso não faz mal aos rins e desaparece quando o tratamento terminar.")
 
     with st.expander("Já estou me sentindo 100% curado no primeiro mês. Posso parar de tomar os remédios?"):
         st.write("Nunca interrompa o tratamento por conta própria. O bacilo da tuberculose é muito resistente. Os sintomas desaparecem rápido, mas a bactéria continua viva nos seus pulmões 🫁. Se você parar antes dos 6 meses, a doença volta muito mais forte e resistente aos remédios (Tuberculose Multidroga Resistente).")
