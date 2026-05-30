@@ -10,10 +10,11 @@ st.set_page_config(page_title="TuberculApp", page_icon="🫁", layout="wide")
 
 ARQUIVO_DADOS = "pacientes.csv"
 
+# COLUNAS ATUALIZADAS: Incluindo Sexo e Condições Especiais
 COLUNAS = [
-    "Nome/Prontuário", "CPF", "Telefone", "Idade", "Etnia", "Escolaridade", "Data Início", 
+    "Nome/Prontuário", "CPF", "Telefone", "Idade", "Sexo", "Etnia", "Escolaridade", "Data Início", 
     "Estado", "Forma Clínica", "Tipo de Caso", "Baciloscopia", "TRM-TB", 
-    "Peso (kg)", "TDO Realizados", "Doses Autodeclaradas", "Efeitos Adversos", 
+    "Peso (kg)", "Condições Especiais", "TDO Realizados", "Doses Autodeclaradas", "Efeitos Adversos", 
     "Senha", "Último Check", "Último V-TDO", "Agendamento V-TDO"
 ]
 
@@ -48,8 +49,10 @@ def carregar_dados():
         df["CPF"] = df["CPF"].fillna("").astype(str).replace("nan", "")
         df["Telefone"] = df["Telefone"].fillna("").astype(str).replace("nan", "")
         df["Idade"] = df["Idade"].fillna(0)
+        df["Sexo"] = df["Sexo"].fillna("").astype(str).replace("nan", "")
         df["Etnia"] = df["Etnia"].fillna("").astype(str).replace("nan", "")
         df["Escolaridade"] = df["Escolaridade"].fillna("").astype(str).replace("nan", "")
+        df["Condições Especiais"] = df["Condições Especiais"].fillna("Nenhuma").astype(str).replace("nan", "Nenhuma")
         df["Efeitos Adversos"] = df["Efeitos Adversos"].fillna("Nenhum registro")
         return df
     else:
@@ -108,6 +111,7 @@ if menu == "Área Médica (Restrita)":
                     telefone = st.text_input("WhatsApp/Celular")
                     senha_paciente = st.text_input("Definir Senha do Paciente", type="password")
                     idade = st.number_input("Idade", min_value=0, max_value=120, value=30)
+                    sexo = st.selectbox("Sexo", ["Feminino", "Masculino", "Não binário", "Ignorado"])
                 with col2:
                     etnia = st.selectbox("Etnia/Raça", ["Branca", "Preta", "Parda", "Amarela", "Indígena", "Ignorado"])
                     escolaridade = st.selectbox("Escolaridade", ["Sem instrução", "Ensino Fundamental Incompleto", "Ensino Fundamental Completo", "Ensino Médio Incompleto", "Ensino Médio Completo", "Ensino Superior Incompleto", "Ensino Superior Completo"])
@@ -119,6 +123,7 @@ if menu == "Área Médica (Restrita)":
                     tipo_caso = st.selectbox("Tipo", ["Novo", "Retratamento", "Falência"])
                     baciloscopia = st.selectbox("Baciloscopia", ["Positiva", "Negativa", "Não realizada"])
                     trm_tb = st.selectbox("TRM-TB", ["Detectável (Sensível)", "Detectável (Resistente)", "Não Detectável", "Não realizado"])
+                    condicoes_sel = st.multiselect("Condições Especiais", ["Gestante", "Criança", "Infecção pelo HIV", "Nefropatia", "Hepatopatia", "Diabetes"])
                 
                 submit = st.form_submit_button("Cadastrar Paciente")
 
@@ -132,14 +137,15 @@ if menu == "Área Médica (Restrita)":
                 elif cpf_limpo in cpfs_cadastrados and cpf_limpo != "":
                     st.error(f"Erro de Duplicidade: O CPF {cpf_limpo} já está cadastrado no sistema!")
                 else:
+                    str_condicoes = ", ".join(condicoes_sel) if condicoes_sel else "Nenhuma"
                     novo_paciente = pd.DataFrame([{
                         "Nome/Prontuário": nome.strip(), "CPF": cpf_limpo, "Telefone": telefone_limpo,
-                        "Idade": idade, "Etnia": etnia, "Escolaridade": escolaridade,
+                        "Idade": idade, "Sexo": sexo, "Etnia": etnia, "Escolaridade": escolaridade,
                         "Data Início": data_inicio.strftime("%Y-%m-%d"), 
                         "Estado": estado_selecionado, "Forma Clínica": forma_clinica, 
                         "Tipo de Caso": tipo_caso, "Baciloscopia": baciloscopia, 
-                        "TRM-TB": trm_tb, "Peso (kg)": peso, "TDO Realizados": 0, 
-                        "Doses Autodeclaradas": 0, "Efeitos Adversos": "Nenhum registro", 
+                        "TRM-TB": trm_tb, "Peso (kg)": peso, "Condições Especiais": str_condicoes,
+                        "TDO Realizados": 0, "Doses Autodeclaradas": 0, "Efeitos Adversos": "Nenhum registro", 
                         "Senha": senha_paciente.strip(), "Último Check": "", "Último V-TDO": "", "Agendamento V-TDO": ""
                     }])
                     df_atual = pd.concat([df_atual, novo_paciente], ignore_index=True)
@@ -149,7 +155,7 @@ if menu == "Área Médica (Restrita)":
 
         with aba2:
             if not df_atual.empty:
-                st.dataframe(df_atual[["Nome/Prontuário", "CPF", "Telefone", "Idade", "Etnia", "Data Início", "TDO Realizados"]], use_container_width=True)
+                st.dataframe(df_atual[["Nome/Prontuário", "CPF", "Idade", "Sexo", "Etnia", "Condições Especiais", "Data Início", "TDO Realizados"]], use_container_width=True)
                 st.divider()
                 paciente_sel = st.selectbox("Selecione o paciente", df_atual["Nome/Prontuário"].tolist())
                 
@@ -385,13 +391,13 @@ elif menu == "Portal do Paciente":
             total_p = (0 if pd.isna(tdo_p) else tdo_p) + (0 if pd.isna(auto_p) else auto_p)
             restantes_p = max(0, 180 - total_p)
             
-            df_pizza_pac = pd.DataFrame({"Status": ["Doses Tomadas", "Doses Restantes"], "Quantidade": [total_p, restantes_p]})
+            df_pizza_pac = pd.DataFrame({"Status": ["Doses Tomadas", "Doses Restantes"], "Quantidade": [total_p, geopolitical_restantes := restantes_p]})
             fig2 = px.pie(df_pizza_pac, values='Quantidade', names='Status', hole=0.4, color='Status', color_discrete_map={"Doses Tomadas": "#2e7d32", "Doses Restantes": "#e0e0e0"})
             fig2.update_layout(margin=dict(t=0, b=0, l=0, r=0))
             st.plotly_chart(fig2, use_container_width=True)
 
 # ==========================================
-# MENU 3: DASHBOARD E MAPA
+# MENU 3: DASHBOARD E MAPA (FILTROS EXPANDIDOS)
 # ==========================================
 elif menu == "Dashboard e Mapa (Restrito)":
     if not st.session_state.medico_logado:
@@ -413,22 +419,31 @@ elif menu == "Dashboard e Mapa (Restrito)":
                 st.rerun()
                 
         if not df_atual.empty:
-            st.subheader("Filtros Epidemiológicos")
+            st.subheader("Filtros Epidemiológicos Cruzados")
             
             df_filtrado = df_atual.copy()
             
             opcoes_forma = [x for x in df_atual["Forma Clínica"].unique() if str(x) != "nan" and str(x) != ""]
             opcoes_etnia = [x for x in df_atual["Etnia"].unique() if str(x) != "nan" and str(x) != ""]
             opcoes_esc = [x for x in df_atual["Escolaridade"].unique() if str(x) != "nan" and str(x) != ""]
+            opcoes_sexo = [x for x in df_atual["Sexo"].unique() if str(x) != "nan" and str(x) != ""]
             
-            col_f1, col_f2, col_f3, col_f4 = st.columns(4)
+            # Primeira fileira de filtros
+            col_f1, col_f2, col_f3 = st.columns(3)
             with col_f1:
                 f_forma = st.multiselect("Forma Clínica", opcoes_forma)
             with col_f2:
                 f_etnia = st.multiselect("Etnia/Raça", opcoes_etnia)
             with col_f3:
                 f_esc = st.multiselect("Escolaridade", opcoes_esc)
+            
+            # Segunda fileira de filtros (Gênero, Comorbidades e Idade)
+            col_f4, col_f5, col_f6 = st.columns(3)
             with col_f4:
+                f_sexo = st.multiselect("Sexo / Identidade de Gênero", opcoes_sexo)
+            with col_f5:
+                f_condicoes = st.multiselect("Condições Especiais / Comorbidades", ["Gestante", "Criança", "Infecção pelo HIV", "Nefropatia", "Hepatopatia", "Diabetes"])
+            with col_f6:
                 idades = pd.to_numeric(df_atual["Idade"], errors='coerce').dropna()
                 min_i = int(idades.min()) if not idades.empty else 0
                 max_i = int(idades.max()) if not idades.empty else 120
@@ -436,12 +451,17 @@ elif menu == "Dashboard e Mapa (Restrito)":
                     max_i += 1
                 f_idade = st.slider("Faixa Etária", min_i, max_i, (min_i, max_i))
 
+            # Aplicação lógica dos filtros estruturados
             if f_forma:
                 df_filtrado = df_filtrado[df_filtrado["Forma Clínica"].isin(f_forma)]
             if f_etnia:
                 df_filtrado = df_filtrado[df_filtrado["Etnia"].isin(f_etnia)]
             if f_esc:
                 df_filtrado = df_filtrado[df_filtrado["Escolaridade"].isin(f_esc)]
+            if f_sexo:
+                df_filtrado = df_filtrado[df_filtrado["Sexo"].isin(f_sexo)]
+            if f_condicoes:
+                df_filtrado = df_filtrado[df_filtrado["Condições Especiais"].apply(lambda x: any(c in str(x) for c in f_condicoes))]
             
             df_filtrado["Idade_Num"] = pd.to_numeric(df_filtrado["Idade"], errors='coerce').fillna(-1)
             df_filtrado = df_filtrado[(df_filtrado["Idade_Num"] >= f_idade[0]) & (df_filtrado["Idade_Num"] <= f_idade[1])]
@@ -453,7 +473,7 @@ elif menu == "Dashboard e Mapa (Restrito)":
             
             df_valido = df_filtrado[df_filtrado["Estado"] != ""]
             df_resumo = df_valido.groupby("Estado").size().reset_index(name="Casos Ativos") if not df_valido.empty else pd.DataFrame(columns=["Estado", "Casos Ativos"])
-            col2.download_button("Baixar Relatório Filtrado", data=df_resumo.to_csv(index=False).encode('utf-8'), file_name='relatorio_estados_tuberculapp.csv', mime='text/csv')
+            col2.download_button("Baixar Relatório Filtrado (CSV)", data=df_resumo.to_csv(index=False).encode('utf-8'), file_name='relatorio_estados_tuberculapp.csv', mime='text/csv')
 
             st.divider()
             col_grafico, col_mapa = st.columns(2)
@@ -462,7 +482,7 @@ elif menu == "Dashboard e Mapa (Restrito)":
                 if not df_filtrado.empty:
                     st.bar_chart(df_filtrado["Forma Clínica"].value_counts())
                 else:
-                    st.write("Nenhum dado para o filtro selecionado.")
+                    st.write("Nenhum dado atende aos critérios dos filtros selecionados.")
             with col_mapa:
                 st.subheader("Distribuição Geográfica Real (Centróides)")
                 df_mapa = df_filtrado.dropna(subset=["Estado"])
@@ -475,7 +495,7 @@ elif menu == "Dashboard e Mapa (Restrito)":
                             lons.append(COORDENADAS_ESTADOS[uf][1])
                     st.map(pd.DataFrame({'lat': lats, 'lon': lons}))
                 else:
-                    st.info("Nenhum paciente atende a esses filtros com estado cadastrado.")
+                    st.info("Nenhum paciente localizado para a combinação de filtros atual.")
         else:
             st.info("Nenhum paciente cadastrado no sistema ainda.")
 
@@ -487,7 +507,7 @@ elif menu == "Informações do Tratamento":
     st.write("A tuberculose é uma doença infecciosa e transmissível, causada pela bactéria Mycobacterium tuberculosis, também conhecida como bacilo de Koch. A doença afeta principalmente os pulmões (forma pulmonar), mas pode atingir outros órgãos e/ou sistemas (forma extrapulmonar). A forma extrapulmonar ocorre com mais frequência em pessoas vivendo com HIV e/ou aids, especialmente aquelas com imunidade baixa.")
     
     st.subheader("Transmissão")
-    st.write("A transmissão da tuberculose acontece por via respiratória, pela eliminação de aerossóis (partículas muito pequenas) produzidos pela tosse, fala ou espirro de uma pessoa com tuberculose ativa (pulmonar ou laríngea), sem tratamento. Quando outras pessoas respirarem essas partículas, há a possibilidade de se infectarem. Calcula-se que, durante um ano, em uma comunidade, uma pessoa com tuberculose pulmonar e/ou laríngea ativa, sem tratamento, e que esteja eliminando aerossóis com bacilos, possa infectar, em média, de 10 a 15 pessoas.")
+    st.write("A transmissão da tuberculose acontece por via respiratória, pela eliminação de aerossóis (partículas muito pequenas) produzidos pela tosse, fala ou espirro de uma pessoa com tuberculose activa (pulmonar ou laríngea), sem tratamento. Quando outras pessoas respirarem essa partículas, há a possibilidade de se infectarem. Calcula-se que, durante um ano, em uma comunidade, uma pessoa com tuberculose pulmonar e/ou laríngea ativa, sem tratamento, e que esteja eliminando aerossóis com bacilos, possa infectar, em média, de 10 a 15 pessoas.")
     
     st.subheader("O que não transmite a tuberculose")
     st.write("A tuberculose não é transmitida por objetos compartilhados. Bacilos que se depositam em roupas, lençóis, copos e talheres dificilmente se espalham em aerossóis e, por isso, não têm papel importante na transmissão da doença.")
@@ -509,7 +529,7 @@ elif menu == "Informações do Tratamento":
         st.write("Sim! O contato físico não transmite a doença. O que se recomenda nos primeiros 15 dias de tratamento (quando você ainda pode transmitir o bacilo pelo ar) é manter os ambientes da casa bem ventilados e com luz solar. Após esse período inicial, o risco de transmissão cai drasticamente.")
 
     with st.expander("Minha urina, suor e lágrimas ficaram com uma cor alaranjada/avermelhada. Isso é perigoso?"):
-        st.write("Não se assuste, isso é completamente normal. Um dos antibióticos do seu esquema (a Rifampicina) tem uma coloração forte que altera a cor dos fluidos corporais. Isso não faz mal aos rins e desaparece quando o tratamento terminar.")
+        st.write("Não se assuste, isso é completamente normal. Um dos antibióticos do seu esquema (a Rifampicina) tem uma coloração forte que altera a cor dos fluidos corporais. Isso não faz mal aos rims e desaparece quando o tratamento terminar.")
 
     with st.expander("Já estou me sentindo 100% curado no primeiro mês. Posso parar de tomar os remédios?"):
         st.write("Nunca interrompa o tratamento por conta própria. O bacilo da tuberculose é muito resistente. Os sintomas desaparecem rápido, mas a bactéria continua viva nos seus pulmões 🫁. Se você parar antes dos 6 meses, a doença volta muito mais forte e resistente aos remédios (Tuberculose Multidroga Resistente).")
