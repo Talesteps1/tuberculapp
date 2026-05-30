@@ -159,7 +159,6 @@ if menu == "Área Médica (Restrita)":
                         link_sala_medico = f"https://meet.jit.si/TuberculApp-{cpf_paciente}"
                         st.link_button("Acessar Sala V-TDO", link_sala_medico)
                         
-                        # NOVO: Mostrando a agenda que o paciente escolheu para o médico
                         st.write("**Horários Agendados pelo Paciente:**")
                         agenda = str(paciente_dados.get("Agendamento V-TDO", ""))
                         if agenda and agenda != "nan":
@@ -212,8 +211,8 @@ if menu == "Área Médica (Restrita)":
                         fig = px.pie(df_pizza, values='Quantidade', names='Status', hole=0.4, color='Status', color_discrete_map={"Doses Tomadas": "#2e7d32", "Doses Restantes": "#e0e0e0"})
                         fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
                         st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("Nenhum paciente cadastrado.")
+        else:
+            st.info("Nenhum paciente cadastrado.")
 
         with aba3:
             st.subheader("Gerenciador do Bot TuberculApp")
@@ -252,8 +251,8 @@ if menu == "Área Médica (Restrita)":
                                 st.success("Notificação enviada para o PC!")
                             except Exception as e:
                                 st.error("Erro ao gerar notificação no sistema.")
-            else:
-                st.info("Nenhum paciente cadastrado no momento.")
+        else:
+            st.info("Nenhum paciente cadastrado no momento.")
 
 # ==========================================
 # MENU 2: PORTAL DO PACIENTE
@@ -340,38 +339,38 @@ elif menu == "Portal do Paciente":
                         df_atual.at[idx, "Doses Autodeclaradas"] = (0 if pd.isna(doses_auto) else doses_auto) + 1
                         salvar_dados(df_atual)
                         st.rerun()
-                        
-            # NOVO: Módulo de Calendário de Agendamento do Paciente
-            st.divider()
-            st.subheader("Sua Rotina de V-TDO")
-            st.write("Agende os dias e horários da sua rotina de videochamadas com a equipe de saúde (recomendado: mínimo de 3 dias úteis por semana na fase inicial).")
-            
-            col_d, col_h = st.columns(2)
-            with col_d:
-                data_agendamento = st.date_input("Escolha a Data")
-            with col_h:
-                hora_agendamento = st.time_input("Escolha o Horário")
-                
-            if st.button("Adicionar à Rotina"):
-                novo_agendamento = f"{data_agendamento.strftime('%d/%m/%Y')} às {hora_agendamento.strftime('%H:%M')}"
-                agenda_atual = str(paciente.get("Agendamento V-TDO", ""))
-                
-                if agenda_atual in ["nan", ""]:
-                    df_atual.at[idx, "Agendamento V-TDO"] = novo_agendamento
-                else:
-                    df_atual.at[idx, "Agendamento V-TDO"] = agenda_atual + " | " + novo_agendamento
                     
+        # Módulo de Calendário de Agendamento do Paciente
+        st.divider()
+        st.subheader("Sua Rotina de V-TDO")
+        st.write("Agende os dias e horários da sua rotina de videochamadas com a equipe de saúde (recomendado: mínimo de 3 dias úteis por semana na fase inicial).")
+        
+        col_d, col_h = st.columns(2)
+        with col_d:
+            data_agendamento = st.date_input("Escolha a Data")
+        with col_h:
+            hora_agendamento = st.time_input("Escolha o Horário")
+            
+        if st.button("Adicionar à Rotina"):
+            novo_agendamento = f"{data_agendamento.strftime('%d/%m/%Y')} às {hora_agendamento.strftime('%H:%M')}"
+            agenda_atual = str(paciente.get("Agendamento V-TDO", ""))
+            
+            if agenda_atual in ["nan", ""]:
+                df_atual.at[idx, "Agendamento V-TDO"] = novo_agendamento
+            else:
+                df_atual.at[idx, "Agendamento V-TDO"] = agenda_atual + " | " + novo_agendamento
+                
+            salvar_dados(df_atual)
+            st.rerun()
+            
+        agenda_tela = str(paciente.get("Agendamento V-TDO", "")).replace(" | ", "\n\n")
+        if agenda_tela and agenda_tela != "nan":
+            st.info(f"**Sua rotina confirmada:**\n\n{agenda_tela}")
+            if st.button("Limpar Calendário"):
+                df_atual.at[idx, "Agendamento V-TDO"] = ""
                 salvar_dados(df_atual)
                 st.rerun()
                 
-            agenda_tela = str(paciente.get("Agendamento V-TDO", "")).replace(" | ", "\n\n")
-            if agenda_tela and agenda_tela != "nan":
-                st.info(f"**Sua rotina confirmada:**\n\n{agenda_tela}")
-                if st.button("Limpar Calendário"):
-                    df_atual.at[idx, "Agendamento V-TDO"] = ""
-                    salvar_dados(df_atual)
-                    st.rerun()
-                    
         with col2:
             st.subheader("Gráfico do seu Ciclo")
             tdo_p = pd.to_numeric(paciente["TDO Realizados"], errors='coerce')
@@ -439,12 +438,37 @@ elif menu == "Dashboard e Mapa (Restrito)":
 elif menu == "Informações do Tratamento":
     st.title("📚 Biblioteca Informativa")
     st.write("A tuberculose é uma doença infecciosa e transmissível, causada pela bactéria Mycobacterium tuberculosis, também conhecida como bacilo de Koch. A doença afeta principalmente os pulmões (forma pulmonar), mas pode atingir outros órgãos e/ou sistemas (forma extrapulmonar). A forma extrapulmonar ocorre com mais frequência em pessoas vivendo com HIV e/ou aids, especialmente aquelas com imunidade baixa.")
+    
     st.subheader("Transmissão")
     st.write("A transmissão da tuberculose acontece por via respiratória, pela eliminação de aerossóis (partículas muito pequenas) produzidos pela tosse, fala ou espirro de uma pessoa com tuberculose ativa (pulmonar ou laríngea), sem tratamento. Quando outras pessoas respirarem essas partículas, há a possibilidade de se infectarem. Calcula-se que, durante um ano, em uma comunidade, uma pessoa com tuberculose pulmonar e/ou laríngea ativa, sem tratamento, e que esteja eliminando aerossóis com bacilos, possa infectar, em média, de 10 a 15 pessoas.")
+    
     st.subheader("O que não transmite a tuberculose")
     st.write("A tuberculose não é transmitida por objetos compartilhados. Bacilos que se depositam em roupas, lençóis, copos e talheres dificilmente se espalham em aerossóis e, por isso, não têm papel importante na transmissão da doença.")
+    
     st.subheader("Fatores que reduzem o risco de transmissão")
     st.write("O bacilo é sensível à luz do sol, e a circulação de ar ajuda a dispersar as partículas infectantes. Por essa razão, ambientes ventilados e com luz natural direta diminuem o risco de transmissão. A “etiqueta da tosse”, ou seja, cobrir a boca com o antebraço ou lenço ao tossir, também é uma medida importante.")
+    
     st.subheader("Redução da transmissão com tratamento")
     st.write("Com o início do tratamento, a transmissão tende a diminuir gradativamente, e em geral, após 15 dias, o risco de transmissão da doença cai bastante. No entanto, o ideal é adotar medidas de controle de infecção até que o resultado da baciloscopia (exame para detectar a bactéria da tuberculose) se torne negativo – tais como cobrir a boca com o braço ou lenço ao tossir e manter o ambiente bem ventilado, com bastante luz natural.")
     st.write("texto disponível em: https://www.gov.br/saude/pt-br/assuntos/saude-de-a-a-z/t/tuberculose")
+
+    st.divider()
+    st.subheader("Perguntas Frequentes (FAQ)")
+
+    with st.expander("Preciso separar meus talheres, pratos e copos dos da minha família?"):
+        st.write("Não. A tuberculose não é transmitida por objetos compartilhados, roupas, lençóis ou apertos de mão. A transmissão ocorre exclusivamente pelo ar (tosse, fala ou espirro). Você pode comer na mesma mesa que sua família.")
+
+    with st.expander("Posso abraçar meus filhos e familiares?"):
+        st.write("Sim! O contato físico não transmite a doença. O que se recomenda nos primeiros 15 dias de tratamento (quando você ainda pode transmitir o bacilo pelo ar) é manter os ambientes da casa bem ventilados e com luz solar. Após esse período inicial, o risco de transmissão cai drasticamente.")
+
+    with st.expander("Minha urina, suor e lágrimas ficaram com uma cor alaranjada/avermelhada. Isso é perigoso?"):
+        st.write("Não se assuste, isso é completamente normal. Um dos antibióticos do seu esquema (a Rifampicina) tem uma coloração forte que altera a cor dos fluidos corporais. Isso não faz mal aos rins e desaparece quando o tratamento terminar.")
+
+    with st.expander("Já estou me sentindo 100% curado no primeiro mês. Posso parar de tomar os remédios?"):
+        st.write("Nunca interrompa o tratamento por conta própria. O bacilo da tuberculose é muito resistente. Os sintomas desaparecem rápido, mas a bactéria continua viva nos seus pulmões 🫁. Se você parar antes dos 6 meses, a doença volta muito mais forte e resistente aos remédios (Tuberculose Multidroga Resistente).")
+
+    with st.expander("Posso beber cerveja ou outras bebidas alcoólicas durante os 6 meses?"):
+        st.write("Não é recomendado. Os medicamentos para tuberculose já exigem um trabalho extra do seu fígado para serem processados. Misturar o tratamento com álcool aumenta muito o risco de hepatite medicamentosa (inflamação grave do fígado), o que pode forçar a interrupção da sua cura.")
+
+    with st.expander("O que é o V-TDO (Tratamento Observado por Vídeo)?"):
+        st.write("É uma forma segura e moderna de cuidar de você sem que precise ir ao posto de saúde todos os dias. Nos dias agendados, você entra na sala de vídeo pelo TuberculApp e toma sua medicação junto com um profissional de saúde, garantindo que tudo está correndo bem com o seu tratamento.")
