@@ -211,8 +211,8 @@ if menu == "Área Médica (Restrita)":
                         fig = px.pie(df_pizza, values='Quantidade', names='Status', hole=0.4, color='Status', color_discrete_map={"Doses Tomadas": "#2e7d32", "Doses Restantes": "#e0e0e0"})
                         fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
                         st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("Nenhum paciente cadastrado.")
+            else:
+                st.info("Nenhum paciente cadastrado.")
 
         with aba3:
             st.subheader("Gerenciador do Bot TuberculApp")
@@ -251,8 +251,8 @@ if menu == "Área Médica (Restrita)":
                                 st.success("Notificação enviada para o PC!")
                             except Exception as e:
                                 st.error("Erro ao gerar notificação no sistema.")
-        else:
-            st.info("Nenhum paciente cadastrado no momento.")
+            else:
+                st.info("Nenhum paciente cadastrado no momento.")
 
 # ==========================================
 # MENU 2: PORTAL DO PACIENTE
