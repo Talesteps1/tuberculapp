@@ -438,4 +438,13 @@ elif menu == "Dashboard e Mapa (Restrito)":
 # ==========================================
 elif menu == "Informações do Tratamento":
     st.title("📚 Biblioteca Informativa")
-    st.write("A tuberculose é uma doença infecciosa e transmissível que afeta prioritariamente os pulmões, causada pelo Bacilo de Koch.")
+    st.write("A tuberculose é uma doença infecciosa e transmissível, causada pela bactéria Mycobacterium tuberculosis, também conhecida como bacilo de Koch. A doença afeta principalmente os pulmões (forma pulmonar), mas pode atingir outros órgãos e/ou sistemas (forma extrapulmonar). A forma extrapulmonar ocorre com mais frequência em pessoas vivendo com HIV e/ou aids, especialmente aquelas com imunidade baixa.")
+    st.subheader("Transmissão")
+    st.write("A transmissão da tuberculose acontece por via respiratória, pela eliminação de aerossóis (partículas muito pequenas) produzidos pela tosse, fala ou espirro de uma pessoa com tuberculose ativa (pulmonar ou laríngea), sem tratamento. Quando outras pessoas respirarem essas partículas, há a possibilidade de se infectarem. Calcula-se que, durante um ano, em uma comunidade, uma pessoa com tuberculose pulmonar e/ou laríngea ativa, sem tratamento, e que esteja eliminando aerossóis com bacilos, possa infectar, em média, de 10 a 15 pessoas.")
+    st.subheader("O que não transmite a tuberculose")
+    st.write("A tuberculose não é transmitida por objetos compartilhados. Bacilos que se depositam em roupas, lençóis, copos e talheres dificilmente se espalham em aerossóis e, por isso, não têm papel importante na transmissão da doença.")
+    st.subheader("Fatores que reduzem o risco de transmissão")
+    st.write("O bacilo é sensível à luz do sol, e a circulação de ar ajuda a dispersar as partículas infectantes. Por essa razão, ambientes ventilados e com luz natural direta diminuem o risco de transmissão. A “etiqueta da tosse”, ou seja, cobrir a boca com o antebraço ou lenço ao tossir, também é uma medida importante.")
+    st.subheader("Redução da transmissão com tratamento")
+    st.write("Com o início do tratamento, a transmissão tende a diminuir gradativamente, e em geral, após 15 dias, o risco de transmissão da doença cai bastante. No entanto, o ideal é adotar medidas de controle de infecção até que o resultado da baciloscopia (exame para detectar a bactéria da tuberculose) se torne negativo – tais como cobrir a boca com o braço ou lenço ao tossir e manter o ambiente bem ventilado, com bastante luz natural.")
+    st.write("texto disponível em: https://www.gov.br/saude/pt-br/assuntos/saude-de-a-a-z/t/tuberculose")
